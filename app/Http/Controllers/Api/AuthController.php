@@ -14,6 +14,35 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function register(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'password' => ['required', 'confirmed', PasswordRule::defaults()],
+        ], [
+            'name.required' => 'Informe seu nome.',
+            'email.required' => 'Informe um e-mail.',
+            'email.email' => 'Informe um e-mail válido.',
+            'email.unique' => 'Já existe uma conta com este e-mail.',
+            'password.required' => 'Informe uma senha.',
+            'password.confirmed' => 'A confirmação de senha não corresponde.',
+        ]);
+
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+        ]);
+
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+        ], 201);
+    }
+
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
