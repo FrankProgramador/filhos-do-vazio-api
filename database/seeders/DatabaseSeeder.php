@@ -17,10 +17,15 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Usuário de teste só é criado em ambientes de desenvolvimento/staging —
+        // evita quebrar o seed em produção (onde fakerphp/faker normalmente não
+        // está instalado) e evita semear uma conta com senha conhecida lá.
+        if (app()->environment(['local', 'staging', 'testing']) && ! User::where('email', 'test@example.com')->exists()) {
+            User::factory()->create([
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+            ]);
+        }
 
         $this->call([
             RolesSeeder::class,
