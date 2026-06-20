@@ -99,8 +99,8 @@ class Character extends Model
     }
 
     /**
-     * Mirrors `totalTracos` in page.tsx: only traits without a prerequisite (i.e. not
-     * a sub-trait) and not granted post-creation (is_extra) count toward the creation caps.
+     * Mirrors `totalTracos` in page.tsx: sub-traços contam para o limite da sua própria
+     * raridade (não há isenção); só traços ganhos pós-criação (is_extra) ficam de fora.
      * Multi-pick traits (max_selections > 1, e.g. "Poderoso") count once per quantity picked,
      * exactly like the frontend's `Object.values(attrTraits).reduce((a,b) => a+b, 0)`.
      *
@@ -109,7 +109,7 @@ class Character extends Model
     public static function countCappedTraits(Collection $selectedTraits): int
     {
         return $selectedTraits
-            ->filter(fn (GameTrait $trait) => $trait->prerequisite_trait_id === null && ! ($trait->pivot?->is_extra ?? false))
+            ->filter(fn (GameTrait $trait) => ! ($trait->pivot?->is_extra ?? false))
             ->sum(fn (GameTrait $trait) => $trait->pivot?->quantity ?? $trait->quantity ?? 1);
     }
 }

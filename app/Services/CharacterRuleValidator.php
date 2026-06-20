@@ -115,9 +115,9 @@ class CharacterRuleValidator
     private function validateRarityCaps(Collection $traits): void
     {
         // Pesa pela quantidade escolhida (traços de atributo multi-pick contam 1x por "vez"
-        // escolhida), exatamente como o totalTracos do frontend.
-        $cappable = $traits->filter(fn (GameTrait $t) => $t->prerequisite_trait_id === null);
-        $weightedCountFor = fn (string $rarity) => $cappable->where('rarity', $rarity)->sum(fn (GameTrait $t) => $t->quantity ?? 1);
+        // escolhida), exatamente como o totalTracos do frontend. Sub-traços contam para o
+        // limite da raridade que eles próprios têm (não há mais isenção para sub-traços).
+        $weightedCountFor = fn (string $rarity) => $traits->where('rarity', $rarity)->sum(fn (GameTrait $t) => $t->quantity ?? 1);
 
         $commonCount = $weightedCountFor('common');
         $remarkableCount = $weightedCountFor('remarkable');

@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\GameTraitController;
 use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\SizeController;
 use App\Http\Controllers\Api\TrilhaController;
+use App\Http\Controllers\Api\UploadController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -33,6 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         return [...$user->toArray(), 'is_admin' => $user->hasRole('admin')];
     });
+
+    Route::post('/uploads/avatar', [UploadController::class, 'avatar']);
 
     Route::apiResource('characters', CharacterController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('/characters/{character}/traits', [CharacterController::class, 'addTrait']);
