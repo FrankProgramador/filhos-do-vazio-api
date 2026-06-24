@@ -30,7 +30,7 @@ class AdminGameTraitController extends Controller
             'modifiers' => ['array'],
             'modifiers.*.attribute' => ['required', 'string'],
             'modifiers.*.operation' => ['required', 'in:add,subtract,multiply,set'],
-            'modifiers.*.value' => ['required', 'numeric'],
+            'modifiers.*.value' => ['required', 'integer'],
         ];
     }
 

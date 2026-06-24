@@ -13,7 +13,7 @@ return new class extends Migration
             $table->morphs('target');
             $table->string('attribute');
             $table->enum('operation', ['add', 'subtract', 'multiply', 'set']);
-            $table->decimal('value', 8, 2);
+            $table->integer('value');
             $table->string('description')->nullable();
             $table->timestamps();
         });

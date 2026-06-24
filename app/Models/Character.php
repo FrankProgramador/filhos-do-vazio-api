@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 
 #[Fillable([
     'user_id', 'name', 'age', 'species', 'avatar', 'size_id', 'trilha_id',
@@ -15,22 +15,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 ])]
 class Character extends Model
 {
-    protected function casts(): array
-    {
-        return [
-            'poder' => 'decimal:1',
-            'saber' => 'decimal:1',
-            'casca' => 'decimal:1',
-            'graca' => 'decimal:1',
-            'coracao' => 'decimal:1',
-            'estamina' => 'decimal:1',
-            'alma' => 'decimal:1',
-            'velocidade' => 'decimal:1',
-            'fofo' => 'decimal:1',
-            'assustador' => 'decimal:1',
-        ];
-    }
-
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -56,6 +40,12 @@ class Character extends Model
     {
         return $this->belongsToMany(Item::class, 'character_items')
             ->withPivot(['quantity', 'durability_remaining', 'is_equipped']);
+    }
+
+    public function abilities(): BelongsToMany
+    {
+        return $this->belongsToMany(Ability::class, 'character_abilities')
+            ->withPivot(['source_type', 'source_id', 'quantity', 'uses_remaining']);
     }
 
     /**

@@ -40,6 +40,11 @@ class GameTrait extends Model
         return $this->morphMany(Modifier::class, 'target');
     }
 
+    public function abilitySources(): MorphMany
+    {
+        return $this->morphMany(AbilitySource::class, 'source');
+    }
+
     public function effects(): BelongsToMany
     {
         return $this->belongsToMany(Effect::class, 'trait_effects', 'trait_id', 'effect_id');

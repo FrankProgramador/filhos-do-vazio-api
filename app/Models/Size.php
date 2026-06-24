@@ -17,22 +17,6 @@ class Size extends Model
         'poder', 'saber', 'casca', 'graca', 'coracao', 'estamina', 'alma', 'velocidade', 'fofo', 'assustador',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'poder' => 'decimal:1',
-            'saber' => 'decimal:1',
-            'casca' => 'decimal:1',
-            'graca' => 'decimal:1',
-            'coracao' => 'decimal:1',
-            'estamina' => 'decimal:1',
-            'alma' => 'decimal:1',
-            'velocidade' => 'decimal:1',
-            'fofo' => 'decimal:1',
-            'assustador' => 'decimal:1',
-        ];
-    }
-
     public function characters(): HasMany
     {
         return $this->hasMany(Character::class);
@@ -44,7 +28,7 @@ class Size extends Model
     public function baselineAttributes(): array
     {
         return collect(self::ATTRIBUTES)
-            ->mapWithKeys(fn (string $attribute) => [$attribute => (float) $this->{$attribute}])
+            ->mapWithKeys(fn (string $attribute) => [$attribute => (int) $this->{$attribute}])
             ->all();
     }
 }

@@ -15,16 +15,16 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('image')->nullable();
 
-            $table->decimal('poder', 4, 1);
-            $table->decimal('saber', 4, 1);
-            $table->decimal('casca', 4, 1);
-            $table->decimal('graca', 4, 1);
-            $table->decimal('coracao', 4, 1);
-            $table->decimal('estamina', 4, 1);
-            $table->decimal('alma', 4, 1);
-            $table->decimal('velocidade', 4, 1);
-            $table->decimal('fofo', 4, 1);
-            $table->decimal('assustador', 4, 1);
+            $table->integer('poder');
+            $table->integer('saber');
+            $table->integer('casca');
+            $table->integer('graca');
+            $table->integer('coracao');
+            $table->integer('estamina');
+            $table->integer('alma');
+            $table->integer('velocidade');
+            $table->integer('fofo');
+            $table->integer('assustador');
 
             $table->integer('sustento_inicial');
             $table->integer('sustento_maximo');

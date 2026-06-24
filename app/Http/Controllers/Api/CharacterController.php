@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCharacterRequest;
+use App\Models\AbilitySource;
 use App\Models\Character;
 use App\Models\GameTrait;
+use App\Models\Item;
+use App\Models\Trilha;
 use App\Services\CharacterRuleValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,11 +17,9 @@ use Illuminate\Validation\ValidationException;
 
 class CharacterController extends Controller
 {
-    private const RELATIONS = ['size', 'trilha', 'traits', 'items'];
+    private const RELATIONS = ['size', 'trilha', 'traits', 'items', 'abilities.triggers'];
 
-    public function __construct(private CharacterRuleValidator $ruleValidator)
-    {
-    }
+    public function __construct(private CharacterRuleValidator $ruleValidator) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -82,6 +83,14 @@ class CharacterController extends Controller
                 $character->items()->attach($itemId, ['quantity' => $quantity]);
             }
 
+            $this->grantAbilitiesFromSource($character, Trilha::class, $result['trilha']->id, 1);
+            foreach ($itemQuantities as $itemId => $quantity) {
+                $this->grantAbilitiesFromSource($character, Item::class, $itemId);
+            }
+            foreach ($result['traits'] as $trait) {
+                $this->grantAbilitiesFromSource($character, GameTrait::class, $trait->id);
+            }
+
             return $character;
         });
 
@@ -131,6 +140,8 @@ class CharacterController extends Controller
             'quantity' => $data['quantity'] ?? 1,
             'is_extra' => true,
         ]);
+
+        $this->grantAbilitiesFromSource($character, GameTrait::class, $data['trait_id']);
 
         return response()->json($character->load(self::RELATIONS));
     }
@@ -187,6 +198,33 @@ class CharacterController extends Controller
             'quantity' => $data['quantity'] ?? 1,
         ]);
 
+        $this->grantAbilitiesFromSource($character, Item::class, $data['item_id']);
+
         return response()->json($character->load(self::RELATIONS));
+    }
+
+    /**
+     * Concede ao personagem as habilidades cadastradas em `ability_sources` para
+     * a fonte informada (Trilha/Item/Traço). Cada fonte gera sua própria linha em
+     * character_abilities — a mesma ability pode chegar de mais de uma fonte ao
+     * mesmo tempo (ex: o item Adaga e o traço Chifre concedendo "Estocada"), o que
+     * é intencional: importa pro roleplay/mecânica de qual fonte está sendo usada.
+     */
+    private function grantAbilitiesFromSource(Character $character, string $sourceType, int $sourceId, ?int $level = null): void
+    {
+        $query = AbilitySource::where('source_type', $sourceType)->where('source_id', $sourceId);
+        $level === null ? $query->whereNull('level') : $query->where('level', $level);
+
+        foreach ($query->pluck('ability_id') as $abilityId) {
+            $alreadyGranted = $character->abilities()
+                ->wherePivot('source_type', $sourceType)
+                ->wherePivot('source_id', $sourceId)
+                ->where('abilities.id', $abilityId)
+                ->exists();
+
+            if (! $alreadyGranted) {
+                $character->abilities()->attach($abilityId, ['source_type' => $sourceType, 'source_id' => $sourceId]);
+            }
+        }
     }
 }

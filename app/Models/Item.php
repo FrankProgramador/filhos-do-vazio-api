@@ -41,4 +41,9 @@ class Item extends Model
     {
         return $this->belongsToMany(Effect::class, 'item_effects');
     }
+
+    public function abilitySources(): MorphMany
+    {
+        return $this->morphMany(AbilitySource::class, 'source');
+    }
 }

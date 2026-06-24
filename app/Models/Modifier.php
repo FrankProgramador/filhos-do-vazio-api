@@ -12,7 +12,7 @@ class Modifier extends Model
     protected function casts(): array
     {
         return [
-            'value' => 'decimal:2',
+            'value' => 'integer',
         ];
     }
 
@@ -24,9 +24,9 @@ class Modifier extends Model
     /**
      * Applies this modifier's operation to a current attribute value.
      */
-    public static function apply(float $current, self $modifier): float
+    public static function apply(int $current, self $modifier): int
     {
-        $value = (float) $modifier->value;
+        $value = (int) $modifier->value;
 
         return match ($modifier->operation) {
             'add' => $current + $value,

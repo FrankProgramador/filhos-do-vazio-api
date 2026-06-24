@@ -18,7 +18,7 @@ class SizeSeeder extends Seeder
                 'order' => 1,
                 'poder' => 2, 'saber' => 3, 'casca' => 3, 'graca' => 4,
                 'coracao' => 6, 'estamina' => 3, 'alma' => 3, 'velocidade' => 7,
-                'fofo' => 1.5, 'assustador' => 1,
+                'fofo' => 2, 'assustador' => 1,
                 'sustento_inicial' => 0, 'sustento_maximo' => 1,
             ],
             [
@@ -29,7 +29,7 @@ class SizeSeeder extends Seeder
                 'order' => 2,
                 'poder' => 3, 'saber' => 3, 'casca' => 3, 'graca' => 3,
                 'coracao' => 7, 'estamina' => 3, 'alma' => 3, 'velocidade' => 6,
-                'fofo' => 1, 'assustador' => 1.5,
+                'fofo' => 1, 'assustador' => 2,
                 'sustento_inicial' => 0, 'sustento_maximo' => 2,
             ],
             [
@@ -40,7 +40,7 @@ class SizeSeeder extends Seeder
                 'order' => 3,
                 'poder' => 4, 'saber' => 3, 'casca' => 4, 'graca' => 2,
                 'coracao' => 8, 'estamina' => 3, 'alma' => 3, 'velocidade' => 5,
-                'fofo' => 1, 'assustador' => 1.5,
+                'fofo' => 1, 'assustador' => 2,
                 'sustento_inicial' => 0, 'sustento_maximo' => 3,
             ],
         ];

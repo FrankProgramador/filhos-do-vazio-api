@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             RolesSeeder::class,
             SizeSeeder::class,
             TrilhaSeeder::class,
+            AbilitySeeder::class,
             GameTraitSeeder::class,
             ModifierSeeder::class,
             ItemSeeder::class,
