@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
-    'name', 'slug', 'description', 'type', 'activation_cost', 'cooldown', 'is_magic', 'is_unique', 'image',
+    'name', 'slug', 'description', 'type', 'scope', 'activation_cost', 'cooldown', 'is_magic', 'is_unique', 'image',
 ])]
 class Ability extends Model
 {

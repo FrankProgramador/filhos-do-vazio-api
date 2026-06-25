@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 
 #[Fillable([
-    'user_id', 'name', 'age', 'species', 'avatar', 'size_id', 'trilha_id',
+    'user_id', 'name', 'age', 'species', 'avatar', 'size_id', 'trilha_id', 'trilha_level',
     'poder', 'saber', 'casca', 'graca', 'coracao', 'estamina', 'alma', 'velocidade', 'fofo', 'assustador',
     'sustento', 'sustento_maximo', 'geo', 'xp', 'level', 'story', 'appearance',
 ])]
@@ -55,16 +55,28 @@ class Character extends Model
      * stays a display-only layer (see Summary.tsx's `finalAttrs`), matching the
      * frontend's existing separation between "build" attributes and "final" attributes.
      *
+     * Estamina e Alma não são mais valores fixos por tamanho — são derivados como
+     * 3 + Graça e 3 + Saber (já com os modificadores de traço aplicados a esses dois
+     * atributos). Modificadores que afetam estamina/alma diretamente (ex: Devoto)
+     * são adiados e aplicados só depois dessa derivação, para não serem sobrescritos.
+     *
      * @param  Collection<int, GameTrait>  $selectedTraits  each trait must have a `pivot_quantity` or `quantity` accessor available
      */
     public static function calculateAttributes(Size $size, Collection $selectedTraits): array
     {
         $attributes = $size->baselineAttributes();
+        $deferred = [];
 
         foreach ($selectedTraits as $trait) {
             $quantity = $trait->pivot?->quantity ?? $trait->quantity ?? 1;
 
             foreach ($trait->modifiers as $modifier) {
+                if (in_array($modifier->attribute, ['estamina', 'alma'], true)) {
+                    $deferred[] = [$modifier, $quantity];
+
+                    continue;
+                }
+
                 if (! array_key_exists($modifier->attribute, $attributes)) {
                     continue;
                 }
@@ -74,6 +86,27 @@ class Character extends Model
                 }
             }
         }
+
+        $attributes = self::deriveSecondaryAttributes($attributes);
+
+        foreach ($deferred as [$modifier, $quantity]) {
+            for ($i = 0; $i < $quantity; $i++) {
+                $attributes[$modifier->attribute] = Modifier::apply($attributes[$modifier->attribute], $modifier);
+            }
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Estamina e Alma são sempre 3 + Graça e 3 + Saber, respectivamente — nunca um
+     * valor fixo por tamanho. Centralizado aqui para que qualquer lugar que monte um
+     * bloco de atributos (criação, edição futura, etc.) aplique a mesma regra.
+     */
+    public static function deriveSecondaryAttributes(array $attributes): array
+    {
+        $attributes['estamina'] = 3 + $attributes['graca'];
+        $attributes['alma'] = 3 + $attributes['saber'];
 
         return $attributes;
     }

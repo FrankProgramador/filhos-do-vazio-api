@@ -264,6 +264,11 @@ class AbilitySeeder extends Seeder
                     'name' => $def['name'],
                     'description' => $def['description'],
                     'type' => $def['type'],
+                    // Nenhuma habilidade atual declara um limite de cena/sessão no texto —
+                    // por ora só distinguimos passiva (sem uso a controlar) de ativa
+                    // (resolvida a cada turno). Ativas com limite real devem ganhar
+                    // 'per_scene'/'per_session' explicitamente quando esse limite existir.
+                    'scope' => $def['type'] === 'passive' ? 'passive' : 'per_turn',
                     'activation_cost' => $def['activation_cost'] ?? null,
                     'cooldown' => $def['cooldown'] ?? 0,
                     'is_magic' => $trilha->tipo === 'mistico',

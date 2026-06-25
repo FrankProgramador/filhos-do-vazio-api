@@ -83,7 +83,7 @@ class CharacterController extends Controller
                 $character->items()->attach($itemId, ['quantity' => $quantity]);
             }
 
-            $this->grantAbilitiesFromSource($character, Trilha::class, $result['trilha']->id, 1);
+            $this->grantTrilhaAbilitiesUpToLevel($character, $result['trilha']->id, 1);
             foreach ($itemQuantities as $itemId => $quantity) {
                 $this->grantAbilitiesFromSource($character, Item::class, $itemId);
             }
@@ -105,11 +105,21 @@ class CharacterController extends Controller
             'geo' => ['sometimes', 'integer', 'min:0'],
             'xp' => ['sometimes', 'integer', 'min:0'],
             'level' => ['sometimes', 'integer', 'min:1'],
+            'trilha_level' => ['sometimes', 'integer', 'between:1,3'],
             'story' => ['sometimes', 'nullable', 'string'],
             'appearance' => ['sometimes', 'nullable', 'string'],
         ]);
 
-        $character->update($data);
+        DB::transaction(function () use ($character, $data) {
+            $character->update($data);
+
+            // Subir de nível na trilha desbloqueia automaticamente as habilidades de
+            // todos os níveis até o novo (não só do nível alvo) — assim um salto de
+            // 1 para 3 concede também as do nível 2 que ainda não tinham sido dadas.
+            if (isset($data['trilha_level']) && $character->trilha_id) {
+                $this->grantTrilhaAbilitiesUpToLevel($character, $character->trilha_id, $data['trilha_level']);
+            }
+        });
 
         return response()->json($character->load(self::RELATIONS));
     }
@@ -209,22 +219,45 @@ class CharacterController extends Controller
      * character_abilities — a mesma ability pode chegar de mais de uma fonte ao
      * mesmo tempo (ex: o item Adaga e o traço Chifre concedendo "Estocada"), o que
      * é intencional: importa pro roleplay/mecânica de qual fonte está sendo usada.
+     *
+     * `uses_remaining` nasce de acordo com o `scope` da habilidade: nulo (sem
+     * controle de uso) para passivas/per_turn, 1 para per_scene/per_session —
+     * que têm um número fixo de usos até o próximo reset.
      */
     private function grantAbilitiesFromSource(Character $character, string $sourceType, int $sourceId, ?int $level = null): void
     {
-        $query = AbilitySource::where('source_type', $sourceType)->where('source_id', $sourceId);
+        $query = AbilitySource::where('source_type', $sourceType)->where('source_id', $sourceId)->with('ability');
         $level === null ? $query->whereNull('level') : $query->where('level', $level);
 
-        foreach ($query->pluck('ability_id') as $abilityId) {
+        foreach ($query->get() as $source) {
             $alreadyGranted = $character->abilities()
                 ->wherePivot('source_type', $sourceType)
                 ->wherePivot('source_id', $sourceId)
-                ->where('abilities.id', $abilityId)
+                ->where('abilities.id', $source->ability_id)
                 ->exists();
 
             if (! $alreadyGranted) {
-                $character->abilities()->attach($abilityId, ['source_type' => $sourceType, 'source_id' => $sourceId]);
+                $usesRemaining = in_array($source->ability->scope, ['per_scene', 'per_session'], true) ? 1 : null;
+
+                $character->abilities()->attach($source->ability_id, [
+                    'source_type' => $sourceType,
+                    'source_id' => $sourceId,
+                    'uses_remaining' => $usesRemaining,
+                ]);
             }
+        }
+    }
+
+    /**
+     * Concede as habilidades de trilha de todos os níveis de 1 até $level —
+     * cumulativo, não só do nível alvo, para que um salto direto (ex: 1 → 3)
+     * não pule as habilidades do nível intermediário. grantAbilitiesFromSource
+     * já é idempotente, então re-chamar para níveis já concedidos é seguro.
+     */
+    private function grantTrilhaAbilitiesUpToLevel(Character $character, int $trilhaId, int $level): void
+    {
+        for ($i = 1; $i <= $level; $i++) {
+            $this->grantAbilitiesFromSource($character, Trilha::class, $trilhaId, $i);
         }
     }
 }

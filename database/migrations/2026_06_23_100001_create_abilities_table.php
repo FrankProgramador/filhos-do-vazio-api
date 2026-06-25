@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description');
             $table->enum('type', ['active', 'passive', 'reaction']);
+            $table->enum('scope', ['passive', 'per_turn', 'per_scene', 'per_session'])->default('passive');
             $table->json('activation_cost')->nullable();
             $table->integer('cooldown')->default(0);
             $table->boolean('is_magic')->default(false);
