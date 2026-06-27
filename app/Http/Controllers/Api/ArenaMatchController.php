@@ -35,6 +35,7 @@ class ArenaMatchController extends Controller
                 'movement' => 5,
                 'hp' => 4,
                 'max_hp' => 4,
+                'casca_atual' => $character->casca,
             ]);
 
             return $match;
@@ -72,6 +73,7 @@ class ArenaMatchController extends Controller
                 'movement' => 5,
                 'hp' => 4,
                 'max_hp' => 4,
+                'casca_atual' => $character->casca,
             ]);
 
             $firstToken = $arenaMatch->tokens()->orderBy('id')->first();
@@ -120,6 +122,7 @@ class ArenaMatchController extends Controller
             'token_id' => ['required', 'integer'],
             'target_token_id' => ['required', 'integer'],
             'option' => ['required', 'string', 'in:'.implode(',', array_keys(ArenaRules::ATTACK_OPTIONS))],
+            'estamina_gasta' => ['required', 'integer', 'min:1'],
         ]);
 
         $token = $this->myActiveToken($request, $arenaMatch, $data['token_id']);
@@ -129,18 +132,53 @@ class ArenaMatchController extends Controller
             throw ValidationException::withMessages(['target_token_id' => 'Alvo inválido.']);
         }
 
+        if ($token->attacked) {
+            throw ValidationException::withMessages(['token_id' => 'Você já atacou neste turno.']);
+        }
+
         $range = ArenaRules::ATTACK_OPTIONS[$data['option']]['range'];
-        if (ArenaRules::manhattan($token->col, $token->row, $target->col, $target->row) > $range) {
+        if (ArenaRules::chebyshev($token->col, $token->row, $target->col, $target->row) > $range) {
             throw ValidationException::withMessages(['target_token_id' => 'Alvo fora de alcance.']);
         }
 
-        $target->update(['hp' => max(0, $target->hp - 1)]);
+        $attacker = $token->character;
 
-        if ($target->hp === 0) {
-            $arenaMatch->update(['status' => 'finished', 'winner_token_id' => $token->id]);
+        if (! $attacker) {
+            throw ValidationException::withMessages(['token_id' => 'Personagem do token não encontrado.']);
         }
 
-        return response()->json($arenaMatch->refresh()->load(self::RELATIONS));
+        if ($data['estamina_gasta'] > $attacker->estamina) {
+            throw ValidationException::withMessages(['estamina_gasta' => 'Você não tem estamina suficiente.']);
+        }
+
+        $diceCount = $data['estamina_gasta'] + $attacker->poder;
+        $rolls = ArenaRules::rollDice($diceCount);
+        $baseDamage = ArenaRules::ATTACK_OPTIONS[$data['option']]['base_damage'];
+        $result = ArenaRules::resolveDamage($rolls, $baseDamage, $target->casca_atual);
+
+        $token->update(['attacked' => true]);
+
+        if ($result['hit']) {
+            $target->update([
+                'hp' => max(0, $target->hp - $result['damage']),
+                'casca_atual' => $result['remaining_casca'],
+            ]);
+
+            if ($target->hp === 0) {
+                $arenaMatch->update(['status' => 'finished', 'winner_token_id' => $token->id]);
+            }
+        }
+
+        $matchData = $arenaMatch->refresh()->load(self::RELATIONS)->toArray();
+        $matchData['attack_result'] = [
+            'rolls' => $rolls,
+            'successes' => $result['successes'],
+            'hit' => $result['hit'],
+            'damage' => $result['damage'],
+            'remaining_casca' => $result['remaining_casca'],
+        ];
+
+        return response()->json($matchData);
     }
 
     public function endTurn(Request $request, ArenaMatch $arenaMatch): JsonResponse
@@ -150,7 +188,7 @@ class ArenaMatchController extends Controller
 
         $other = $arenaMatch->tokens->firstWhere('id', '!=', $token->id);
 
-        $token->update(['movement_used' => 0]);
+        $token->update(['movement_used' => 0, 'attacked' => false]);
         $arenaMatch->update([
             'current_token_id' => $other?->id,
             'turn_number' => $arenaMatch->turn_number + 1,

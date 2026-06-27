@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'arena_match_id', 'user_id', 'character_id', 'label', 'color',
-    'col', 'row', 'movement', 'movement_used', 'hp', 'max_hp',
+    'col', 'row', 'movement', 'movement_used', 'hp', 'max_hp', 'casca_atual', 'attacked',
 ])]
 class ArenaMatchToken extends Model
 {
@@ -25,5 +25,12 @@ class ArenaMatchToken extends Model
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'attacked' => 'boolean',
+        ];
     }
 }
